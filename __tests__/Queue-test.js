@@ -1,5 +1,5 @@
-import StorageProvider from '../Provider/Storage'
-import { QueueProvider, fetchWorker } from '../Provider/Queue'
+import StorageProvider from '../src/Storage'
+import { QueueProvider, fetchWorker } from '../src/Queue'
 
 jest.mock('react-native-fs', () => {
   return {

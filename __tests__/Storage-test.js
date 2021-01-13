@@ -1,5 +1,5 @@
 import React from 'react'
-import Storage, { Selectors } from '../Provider/Storage'
+import Storage, { Selectors } from '../src/Storage'
 
 const defaultSample = [
 	['hashed1', {

@@ -1,13 +1,13 @@
 {
-  "name": "Image",
-  "version": "0.0.1",
-  "private": true,
+  "name": "react-native-cached",
+  "version": "0.0.2",
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build": "babel src -d dist"
   },
   "dependencies": {
     "async": "^3.2.0",
@@ -16,7 +16,9 @@
     "react-native-fs": "^2.16.6"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.4",
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
     "@babel/runtime": "^7.8.4",
     "@react-native-community/eslint-config": "^1.1.0",
     "babel-jest": "^25.1.0",

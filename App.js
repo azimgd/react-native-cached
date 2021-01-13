@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { StyleSheet, Image, View } from 'react-native'
-import * as Helpers from './Provider/Helpers'
-import StorageProvider from './Provider/Storage'
-import QueueProvider from './Provider/Queue'
+import * as Helpers from './src/Helpers'
+import StorageProvider from './src/Storage'
+import QueueProvider from './src/Queue'
 
 const Storage = StorageProvider()
 const queue = QueueProvider(Storage)
