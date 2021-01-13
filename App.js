@@ -20,10 +20,13 @@ const CachedImage = ({
     const signature2 = Helpers.generateSignature('https://i.imgur.com/Y1I6WXx.jpg')
     queue.push(groupHash, signature2)
 
+    const signature3 = Helpers.generateSignature('https://i.imgur.com/BQXN6t1.jpg')
+    queue.push(groupHash, signature3)
+
     return Storage.subscribe(groupHash, setAsset)
   }, [])
 
-  if (!asset) {
+  if (!asset || !asset.value.assets[asset.value.pointerSuccess]) {
     return null
   }
 
@@ -39,7 +42,7 @@ const CachedImage = ({
 const App = () => {
   return (
     <View style={styles.view}>
-      {(Array.from(Array(20).keys())).map(item => 
+      {(Array.from(Array(1).keys())).map(item => 
         <CachedImage key={item} style={styles.image} groupHash="2ahUKEwiN8ZWm5ILuAhWRyoUKHXaSCEoQFjACegQIARAC1" />
       )}
     </View>

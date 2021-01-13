@@ -2,6 +2,10 @@ import RNFS from 'react-native-fs'
 import priorityQueue from 'async/priorityQueue'
 import asyncify from 'async/asyncify'
 
+export const checkLocalImage = async (path) => {
+  return await RNFS.exists(path)
+}
+
 export const fetchRemoteImage = async ({
   signature,
   progressCallback,
@@ -50,16 +54,18 @@ export const fetchRemoteImage = async ({
 
 export const fetchLocalImage = async ({
   signature,
-  progressCallback,
-  requestCallback,
   failureCallback,
+  requestCallback,
   successCallback,
 }) => {
+  requestCallback()
+  successCallback()
 }
 
-export const fetchWorker = (trackerProvider, fetchRemoteImage) => asyncify(async (task) => {
+export const fetchWorker = (trackerProvider, checkLocalImage, fetchLocalImage, fetchRemoteImage) => asyncify(async (task) => {
   const requestCallback = () => {
     trackerProvider.incrementPointer(task.groupHash, 'pointerLoading')
+    trackerProvider.progress(task.groupHash, 0.1)
   }
 
   const progressCallback = (data) => {
@@ -72,62 +78,64 @@ export const fetchWorker = (trackerProvider, fetchRemoteImage) => asyncify(async
   }
 
   const successCallback = () => {
-    trackerProvider.success(task.groupHash)
     trackerProvider.incrementPointer(task.groupHash, 'pointerSuccess')
+    trackerProvider.success(task.groupHash)
+    console.log('success')
   }
 
-  await fetchRemoteImage({
-    signature: task.signature,
-    progressCallback,
-    requestCallback,
-    failureCallback,
-    successCallback,
-  })
+  if (await checkLocalImage(task.signature.path)) {
+    await fetchLocalImage({
+      signature: task.signature,
+      progressCallback,
+      requestCallback,
+      failureCallback,
+      successCallback,
+    })
+  } else {
+    await fetchRemoteImage({
+      signature: task.signature,
+      progressCallback,
+      requestCallback,
+      failureCallback,
+      successCallback,
+    })
+  }
 })
 
-export const cacheWorker = (trackerProvider) => async (task) => {
-  const failureCallback = () => {
-    trackerProvider.failure(task.groupHash)
-  }
-
-  const successCallback = () => {
-    trackerProvider.success(task.groupHash)
-  }
-
-  await fetchLocalImage({
-    signature: task.signature,
-    failureCallback,
-    successCallback,
-  })
-}
-
-export const QueueProvider = (trackerProvider, fetchQueueWorker, cacheQueueWorker) => {
+export const QueueProvider = (trackerProvider, fetchQueueWorker) => {
   const priority = 1
-  const fetchQueue = priorityQueue(fetchQueueWorker, 3)
-  const cacheQueue = priorityQueue(cacheQueueWorker, 3)
+  const fetchQueue = priorityQueue(fetchQueueWorker, 1)
 
-	const push = (groupHash, signature) => {
-    const initialAsset = trackerProvider.getAssetByPointer(groupHash, 0)
-    const currentAsset = trackerProvider.getAssetByPath(groupHash, signature)
+	const push = async (groupHash, signature) => {
+    /**
+     * Store asset if it doesn't exist in memory
+     */
+    if (!trackerProvider.getAssetByPath(groupHash, signature)) {
+      trackerProvider.queue(groupHash, signature)
+    }
 
     /**
-     * @TODO: investigate race condition
+     * Assuming current item has already pushed into the memory
      */
-    if (currentAsset) {
-      return
-    }
-
-    trackerProvider.queue(groupHash, signature)
-
-    if (!initialAsset) {
+    if (
+      trackerProvider.shouldInitializeDownload(groupHash) ||
+      trackerProvider.shouldContinueDownload(groupHash)
+    ) {
+      console.log(trackerProvider.shouldInitializeDownload(groupHash), trackerProvider.shouldContinueDownload(groupHash))
       fetchQueue.push({ groupHash, signature }, priority, () => {
-        const nextAsset = trackerProvider.getAssetByPointer(groupHash, 0)
-
-        if (nextAsset && nextAsset.progress === 0) {
-          fetchQueue.push({ groupHash, signature: nextAsset })
-        }
+        push(groupHash, trackerProvider.getAssetByCurrentPointer(groupHash, 1))
       })
     }
+
+    /**
+     * Start asset if it hasn't initialized in queue
+     */
+    // if (!trackerProvider.getAssetByCurrentPointer(groupHash, 0)) {
+    //   console.log('pushed into queue')
+    //   fetchQueue.push({ groupHash, signature }, priority, () => {
+        
+    //   })
+    // }
 	}
 
 	return {
@@ -139,9 +147,7 @@ export const QueueProvider = (trackerProvider, fetchQueueWorker, cacheQueueWorke
 let instance = null
 export default (StorageProvider) => {
   if (!instance) {
-    instance = QueueProvider(StorageProvider, fetchWorker(StorageProvider, fetchRemoteImage), cacheWorker(StorageProvider))
+    instance = QueueProvider(StorageProvider, fetchWorker(StorageProvider, checkLocalImage, fetchLocalImage, fetchRemoteImage))
   }
   return instance
 }
-
-// export default (StorageProvider) => QueueProvider(StorageProvider, fetchWorker(StorageProvider, fetchRemoteImage))

@@ -12,8 +12,8 @@
 /*			updatedAt: null
 /*	  }
 /* 	],
-/* 	pointerSuccess: 0,
-/* 	pointerLoading: 0,
+/* 	pointerSuccess: -1,
+/* 	pointerLoading: -1,
 /* 	status: 'idle',
 /* }]
 /* 
@@ -82,7 +82,7 @@ export const Selectors = (() => {
 	}
 
 	const createSchema = () => {
-		return { assets: [], pointerSuccess: 0, pointerLoading: 0, status: 'idle' }
+		return { assets: [], pointerSuccess: -1, pointerLoading: -1, status: 'idle' }
 	}
 
 	const pushAsset = (object, value) => {
@@ -92,10 +92,25 @@ export const Selectors = (() => {
 
 	const getAssetByPath = (object, value) => {
 		if (!object || !object.assets) return false
+		if (!value || !value.path) return false
 		return object.assets.find(item => item.path === value.path)
 	}
 
-	const getAssetByPointer = (object, shifter) => {
+	const shouldInitializeDownload = (object) => {
+		if (!object || !object.assets) return false
+		return object.assets.length === 1 && object.assets[0].progress === 0
+	}
+
+	const shouldContinueDownload = (object) => {
+		if (!object || !object.assets) return false
+		if (object.assets.length === 1 || object.assets[0].progress === 0) return false
+		return (
+			object.pointerLoading === object.pointerSuccess &&
+			object.assets[object.pointerSuccess + 1]?.path
+		)
+	}
+
+	const getAssetByCurrentPointer = (object, shifter) => {
 		if (!object || !object.assets) return false
 		if (!object.assets[object.pointerSuccess + (shifter || 0)]) return undefined
 		return object.assets[object.pointerSuccess + (shifter || 0)]
@@ -103,8 +118,8 @@ export const Selectors = (() => {
 
 	const setProgress = (object, value) => {
 		if (value < 0 || value > 100) return object
-		object.assets[object.pointerSuccess].progress = value
-		object.assets[object.pointerSuccess].updatedAt = Date.now()
+		object.assets[object.pointerLoading].progress = value
+		object.assets[object.pointerLoading].updatedAt = Date.now()
 		return object
 	}
 
@@ -132,7 +147,9 @@ export const Selectors = (() => {
 		clone,
 		createSchema,
 		getAssetByPath,
-		getAssetByPointer,
+		shouldInitializeDownload,
+		shouldContinueDownload,
+		getAssetByCurrentPointer,
 		pushAsset,
 		setProgress,
 		setStatus,
@@ -147,9 +164,19 @@ export const TrackerProvider = (storage) => {
 		return Selectors.getAssetByPath(current, signature)
 	}
 
-	const getAssetByPointer = (key, shifter) => {
+	const getAssetByCurrentPointer = (key, shifter) => {
 		const current = storage.get(key)
-		return Selectors.getAssetByPointer(current, shifter)
+		return Selectors.getAssetByCurrentPointer(current, shifter)
+	}
+
+	const shouldInitializeDownload = (key) => {
+		const current = storage.get(key)
+		return Selectors.shouldInitializeDownload(current)
+	}
+
+	const shouldContinueDownload = (key) => {
+		const current = storage.get(key)
+		return Selectors.shouldContinueDownload(current)
 	}
 
 	const incrementPointer = (key, type) => {
@@ -204,7 +231,9 @@ export const TrackerProvider = (storage) => {
 		incrementPointer,
 		decrementPointer,
 		getAssetByPath,
-		getAssetByPointer,
+		getAssetByCurrentPointer,
+		shouldInitializeDownload,
+		shouldContinueDownload,
 		queue,
 		progress,
 		success,
@@ -220,7 +249,9 @@ const adapter = (input) => {
 		incrementPointer: tracker.incrementPointer,
 		decrementPointer: tracker.decrementPointer,
 		getAssetByPath: tracker.getAssetByPath,
-		getAssetByPointer: tracker.getAssetByPointer,
+		getAssetByCurrentPointer: tracker.getAssetByCurrentPointer,
+		shouldInitializeDownload: tracker.shouldInitializeDownload,
+		shouldContinueDownload: tracker.shouldContinueDownload,
 		queue: tracker.queue,
 		progress: tracker.progress,
 		success: tracker.success,
