@@ -2,9 +2,6 @@
   "name": "react-native-cached",
   "version": "0.0.3",
   "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "start": "react-native start",
     "test": "jest",
     "lint": "eslint .",
     "build": "babel src -d dist"
