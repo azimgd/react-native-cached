@@ -118,6 +118,7 @@ export const Selectors = (() => {
 
 	const setProgress = (object, value) => {
 		if (value < 0 || value > 100) return object
+		if (!object.assets[object.pointerLoading]) return object
 		object.assets[object.pointerLoading].progress = value
 		object.assets[object.pointerLoading].updatedAt = Date.now()
 		return object

@@ -17,10 +17,6 @@ const cyrb53 = (str, seed = 0) => {
  * 
  */
 export const getPartial = (source) => {
-  // if (!source.includes('cloudfront.net')) {
-  //   return source
-  // }
-  // return qs.parseUrl(source).url.split('cloudfront.net')[1].replace(':', '-')
   return cyrb53(source)
 }
 

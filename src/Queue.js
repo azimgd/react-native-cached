@@ -80,7 +80,6 @@ export const fetchWorker = (trackerProvider, checkLocalImage, fetchLocalImage, f
   const successCallback = () => {
     trackerProvider.incrementPointer(task.groupHash, 'pointerSuccess')
     trackerProvider.success(task.groupHash)
-    console.log('success')
   }
 
   if (await checkLocalImage(task.signature.path)) {
@@ -121,21 +120,10 @@ export const QueueProvider = (trackerProvider, fetchQueueWorker) => {
       trackerProvider.shouldInitializeDownload(groupHash) ||
       trackerProvider.shouldContinueDownload(groupHash)
     ) {
-      console.log(trackerProvider.shouldInitializeDownload(groupHash), trackerProvider.shouldContinueDownload(groupHash))
       fetchQueue.push({ groupHash, signature }, priority, () => {
         push(groupHash, trackerProvider.getAssetByCurrentPointer(groupHash, 1))
       })
     }
-
-    /**
-     * Start asset if it hasn't initialized in queue
-     */
-    // if (!trackerProvider.getAssetByCurrentPointer(groupHash, 0)) {
-    //   console.log('pushed into queue')
-    //   fetchQueue.push({ groupHash, signature }, priority, () => {
-        
-    //   })
-    // }
 	}
 
 	return {
