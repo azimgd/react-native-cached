@@ -53,8 +53,6 @@ export const fetchRemoteImage = async ({
 }
 
 export const fetchLocalImage = async ({
-  signature,
-  failureCallback,
   requestCallback,
   successCallback,
 }) => {
